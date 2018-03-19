@@ -1,0 +1,6 @@
+FROM rust:1.24.1-stretch
+
+RUN apt-get update && \
+    apt-get install -y build-essential libsodium-dev librocksdb-dev pkg-config
+
+VOLUME /usr/local/cargo

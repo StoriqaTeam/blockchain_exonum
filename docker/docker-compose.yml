@@ -1,0 +1,20 @@
+version: '3'
+services:
+  exonum-node-1:
+    image: exonum
+    build:
+      context: .
+      dockerfile: Dockerfile.exonum
+    container_name: exonum
+    working_dir: /app
+    command: ["sh", "-c", "cargo run"]
+    volumes:
+      - ..:/app
+      - exonum_cargo_cache:/usr/local/cargo
+    expose:
+      - 8000
+    stdin_open: true
+
+volumes:
+  exonum_cargo_cache:
+  stq-users-postgres-data:
