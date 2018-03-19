@@ -11,10 +11,10 @@ services:
     volumes:
       - ..:/app
       - exonum_cargo_cache:/usr/local/cargo
-    expose:
-      - 8000
+    ports:
+      - 8000:8000
     stdin_open: true
+    
 
 volumes:
   exonum_cargo_cache:
-  stq-users-postgres-data:
