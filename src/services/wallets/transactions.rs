@@ -4,30 +4,8 @@ use exonum::messages::{Message};
 
 use exonum::crypto::{PublicKey};
 use super::super::{WALLETS_SERVICE_ID};
-
-encoding_struct! {
-    /// Wallet struct used to persist data within the service.
-    struct Wallet {
-        /// Current balance.
-        balance: u64,
-    }
-}
-
-/// Additional methods for managing balance of the wallet in an immutable fashion.
-impl Wallet {
-    /// Returns a copy of this wallet with the balance increased by the specified amount.
-    pub fn increase(self, amount: u64) -> Self {
-        let balance = self.balance() + amount;
-        Self::new(balance)
-    }
-
-    /// Returns a copy of this wallet with the balance decreased by the specified amount.
-    pub fn decrease(self, amount: u64) -> Self {
-        assert!(self.balance() >= amount);
-        let balance = self.balance() - amount;
-        Self::new(balance)
-    }
-}
+use super::repo::WalletsRepo;
+use super::error::Error;
 
 transactions! {
     CurrencyTransactions {
@@ -58,13 +36,28 @@ impl Transaction for TxTransfer {
         (*self.from() != *self.to()) && self.verify_signature(self.from())
     }
 
-    /// Retrieves two wallets to apply the transfer; they should be previously registered
-    /// with the help of [`TxCreateWallet`] transactions. Checks the sender's
+    /// Retrieves two wallets to apply the transfer; if receiving wallet doesn't exist
+    /// it is created. Checks the sender's
     /// balance and applies changes to the balances of the wallets if the sender's balance
     /// is sufficient. Otherwise, performs no op.
-    ///
-    /// [`TxCreateWallet`]: struct.TxCreateWallet.html
     fn execute(&self, view: &mut Fork) -> ExecutionResult {
-        unimplemented!()
+        let mut repo = WalletsRepo::new(view);
+        let sender_wallet = match repo.get(self.from()) {
+            Some(val) => val,
+            None => Err(Error::InsufficientCurrencyAmount)?,
+        };
+        let receiver_wallet = repo.get(self.to()).unwrap_or_default();
+        let amount = self.amount();
+        if sender_wallet.balance() >= amount {
+            let sender_wallet = sender_wallet.decrease(amount);
+            let receiver_wallet = receiver_wallet.increase(amount);
+            let mut repo_mut = repo.as_mut();
+            repo_mut.put(self.from(), sender_wallet);
+            repo_mut.put(self.to(), receiver_wallet);
+            Ok(())
+        } else {
+            Err(Error::InsufficientCurrencyAmount)?
+        }
+
     }
 }

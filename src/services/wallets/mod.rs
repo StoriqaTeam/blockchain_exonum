@@ -1,5 +1,9 @@
+//! Defines service for wallets operations.
+
 pub mod transactions;
 pub mod api;
+pub mod repo;
+pub mod error;
 
 use exonum::encoding;
 use exonum::messages::RawTransaction;
