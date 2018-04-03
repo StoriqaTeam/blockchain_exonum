@@ -48,12 +48,8 @@ impl<T: AsRef<Snapshot>> WalletsRepo<T> {
         WalletsRepo { view }
     }
 
-    /// Gets a specific wallet from the storage.
-    pub fn get(&self, pub_key: &PublicKey) -> Option<Wallet> {
-        self.wallets().get(pub_key)
-    }
-
-    fn wallets(&self) -> ProofMapIndex<&Snapshot, PublicKey, Wallet> {
+    /// Gets a read-only view on the table
+    pub fn as_read_only(&self) -> ProofMapIndex<&Snapshot, PublicKey, Wallet> {
         ProofMapIndex::new(TABLE_NAME, self.view.as_ref())
     }
 }

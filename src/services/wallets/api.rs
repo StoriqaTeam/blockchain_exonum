@@ -1,9 +1,17 @@
-use exonum::crypto::{Hash};
+use exonum::crypto::{Hash, PublicKey};
 use iron::prelude::*;
 use exonum::api::{Api};
 use router::Router;
 use exonum::node::{ApiSender};
 use exonum::blockchain::{Blockchain};
+use exonum::encoding::serialize::FromHex;
+use iron::status::Status;
+use iron::headers::ContentType;
+use iron::modifiers::Header;
+use std::net;
+use failure::Fail;
+
+use super::repo::WalletsRepo;
 
 #[derive(Clone)]
 pub struct WalletsApi {
@@ -20,13 +28,37 @@ pub struct TransactionResponse {
 
 impl WalletsApi {
     /// Endpoint for getting a single wallet.
-    fn get_wallet(&self, req: &mut Request) -> IronResult<Response> {
-        unimplemented!()
-    }
+    fn get_balance(&self, req: &mut Request) -> IronResult<Response> {
+        let path = req.url.path();
+        let hex_wallet_key = match path.last() {
+            Some(key) => key,
+            None => {
+                let e: net::AddrParseError = net::AddrParseError {0: ()};
+                return Err(
+                    IronError::new(ApiError::InvalidParse, (
+                        Status::BadRequest,
+                        Header(ContentType::json()),
+                        "\"Invalid request param: `pub_key`\"",
+                    ))
+                )
+            }
+        };
+        let public_key = PublicKey::from_hex(hex_wallet_key).map_err(|e| {
+            IronError::new(e, (
+                Status::BadRequest,
+                Header(ContentType::json()),
+                "\"Invalid request param: `pub_key`\"",
+            ))
+        })?;
 
-    /// Endpoint for dumping all wallets from the storage.
-    fn get_wallets(&self, _: &mut Request) -> IronResult<Response> {
-        unimplemented!()
+        let wallet = {
+            let snapshot = self.blockchain.snapshot();
+            let repo = WalletsRepo::new(snapshot);
+            let repo = repo.as_read_only();
+            repo.get(&public_key).unwrap_or_default()
+        };
+
+        self.ok_response(&json!({ "balance": wallet.balance() }))
     }
 
     /// Common processing for transaction-accepting endpoints.
@@ -43,5 +75,22 @@ impl WalletsApi {
 impl Api for WalletsApi {
     fn wire(&self, router: &mut Router) {
         unimplemented!()
+    }
+}
+
+/// Error codes for Wallets service
+#[derive(Debug, Fail)]
+#[repr(u8)]
+enum ApiError {
+    /// Insufficient currency amount.
+    ///
+    /// Can be emitted by `TxTransfer`.
+    #[fail(display = "Insufficient currency amount")]
+    InvalidParse = 0,
+}
+
+impl iron::error::Error for ApiError {
+    fn description(&self) -> &str {
+        (self as Fail).cause()
     }
 }
