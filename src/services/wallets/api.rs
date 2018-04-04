@@ -1,9 +1,9 @@
 use exonum::crypto::{Hash, PublicKey};
 use iron::prelude::*;
-use exonum::api::Api;
+use exonum::api::{Api, ApiError as ExonumApiError};
 use router::Router;
-use exonum::node::ApiSender;
-use exonum::blockchain::Blockchain;
+use exonum::node::{ApiSender, TransactionSend};
+use exonum::blockchain::{Blockchain, Transaction};
 use exonum::encoding::serialize::FromHex;
 use iron::status::Status;
 use iron::headers::ContentType;
@@ -13,6 +13,9 @@ use failure::Fail;
 use iron;
 use iron::error::Error as IronErrorTrait;
 use std::fmt::{Display, Formatter};
+use bodyparser;
+use serde_json;
+use super::WalletsTransactions;
 
 use super::repo::WalletsRepo;
 
@@ -35,16 +38,8 @@ impl WalletsApi {
         let path = req.url.path();
         let hex_wallet_key = match path.last() {
             Some(key) => key,
-            None => {
-                return Err(IronError::new(
-                    ApiError::InvalidParam("public_key", req.url.to_string()),
-                    (
-                        Status::BadRequest,
-                        Header(ContentType::json()),
-                        r#"{"error": "Invalid request param: `public_key`"}"#,
-                    ),
-                ))
-            }
+            None =>
+                return Err(ApiError::InvalidParam("public_key", req.url.to_string()).into()),
         };
         let public_key = match PublicKey::from_hex(hex_wallet_key) {
             Ok(key) => key,
@@ -72,7 +67,17 @@ impl WalletsApi {
 
     /// Common processing for transaction-accepting endpoints.
     fn post_transaction(&self, req: &mut Request) -> IronResult<Response> {
-        unimplemented!()
+        match req.get::<bodyparser::Struct<WalletsTransactions>>() {
+            Ok(Some(transaction)) => {
+                let transaction: Box<Transaction> = transaction.into();
+                let tx_hash = transaction.hash();
+                self.channel.send(transaction).map_err(ExonumApiError::from)?;
+                let json = TransactionResponse { tx_hash };
+                self.ok_response(&serde_json::to_value(&json).unwrap())
+            }
+            Ok(None) => Err(ApiError::UnprocessableEntity("Empty request body".to_string()).into()),
+            Err(e) => Err(ApiError::Unknown(e.to_string()).into()),
+        }
     }
 }
 
@@ -92,12 +97,16 @@ impl Api for WalletsApi {
 enum ApiError {
     /// Invalid prarmeter either in path or in query
     InvalidParam(&'static str, String),
+    UnprocessableEntity(String),
+    Unknown(String)
 }
 
 impl IronErrorTrait for ApiError {
     fn description(&self) -> &str {
         match self {
             &ApiError::InvalidParam(_, _) => "Invalid param in path or query",
+            &ApiError::UnprocessableEntity(_) => "Unprocessable entity",
+            &ApiError::Unknown(_) => "Unknown error",
         }
     }
 }
@@ -111,6 +120,32 @@ impl Display for ApiError {
                 key,
                 value
             )),
+            &ApiError::UnprocessableEntity(ref msg) => f.write_str(&format!(
+                "{}: {}",
+                self.description(),
+                msg
+            )),
+            &ApiError::Unknown(ref msg) => f.write_str(&format!(
+                "{}: {}",
+                self.description(),
+                msg
+            )),
         }
+    }
+}
+
+impl Into<IronError> for ApiError {
+    fn into(self) -> IronError {
+        let message = {
+            format!(r#"{{"error": "{}"}}"#, &self)
+        };
+        IronError::new(
+            self,
+            (
+                Status::BadRequest,
+                Header(ContentType::json()),
+                message
+            ),
+        )
     }
 }
