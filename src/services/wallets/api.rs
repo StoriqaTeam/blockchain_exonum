@@ -88,7 +88,14 @@ impl WalletsApi {
 /// representation used in Exonum internally.
 impl Api for WalletsApi {
     fn wire(&self, router: &mut Router) {
-        unimplemented!()
+        let self_ = self.clone();
+        let post_transfer = move |req: &mut Request| self_.post_transaction(req);
+        let self_ = self.clone();
+        let get_wallet = move |req: &mut Request| self_.get_balance(req);
+
+        // Bind handlers to specific routes.
+        router.post("/v1/wallets/transfer", post_transfer, "post_transfer");
+        router.get("/v1/wallet/:pub_key", get_wallet, "get_wallet");
     }
 }
 
