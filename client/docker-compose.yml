@@ -9,7 +9,7 @@ services:
     working_dir: /app
     command: ["sh", "-c", "cargo run"]
     volumes:
-      - ..:/app
+      - .:/app
     ports:
       - 8000:8000
     stdin_open: true
