@@ -5,14 +5,14 @@ pub mod repo;
 pub mod error;
 
 use exonum::encoding;
-use exonum::messages::{RawTransaction, Message};
-use exonum::storage::{Snapshot, Fork};
-use exonum::blockchain::{Service, Transaction, ApiContext, ExecutionResult, TransactionSet};
-use exonum::crypto::{Hash};
-use exonum::api::{Api};
+use exonum::messages::{Message, RawTransaction};
+use exonum::storage::{Fork, Snapshot};
+use exonum::blockchain::{ApiContext, ExecutionResult, Service, Transaction, TransactionSet};
+use exonum::crypto::Hash;
+use exonum::api::Api;
 use iron::Handler;
 use router::Router;
-use exonum::crypto::{PublicKey};
+use exonum::crypto::PublicKey;
 
 use self::api::WalletsApi;
 use self::repo::WalletsRepo;
@@ -105,6 +105,5 @@ impl Transaction for TxTransfer {
         } else {
             Err(Error::InsufficientCurrencyAmount)?
         }
-
     }
 }

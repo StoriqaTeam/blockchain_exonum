@@ -1,4 +1,4 @@
-use exonum::blockchain::{ExecutionError};
+use exonum::blockchain::ExecutionError;
 
 /// Error codes for Wallets service
 #[derive(Debug, Fail)]

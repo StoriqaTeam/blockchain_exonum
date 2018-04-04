@@ -1,15 +1,18 @@
 use exonum::crypto::{Hash, PublicKey};
 use iron::prelude::*;
-use exonum::api::{Api};
+use exonum::api::Api;
 use router::Router;
-use exonum::node::{ApiSender};
-use exonum::blockchain::{Blockchain};
+use exonum::node::ApiSender;
+use exonum::blockchain::Blockchain;
 use exonum::encoding::serialize::FromHex;
 use iron::status::Status;
 use iron::headers::ContentType;
 use iron::modifiers::Header;
-use std::net;
+use std;
 use failure::Fail;
+use iron;
+use iron::error::Error as IronErrorTrait;
+use std::fmt::{Display, Formatter};
 
 use super::repo::WalletsRepo;
 
@@ -33,23 +36,29 @@ impl WalletsApi {
         let hex_wallet_key = match path.last() {
             Some(key) => key,
             None => {
-                let e: net::AddrParseError = net::AddrParseError {0: ()};
-                return Err(
-                    IronError::new(ApiError::InvalidParse, (
+                return Err(IronError::new(
+                    ApiError::InvalidParam("public_key", req.url.to_string()),
+                    (
                         Status::BadRequest,
                         Header(ContentType::json()),
-                        "\"Invalid request param: `pub_key`\"",
-                    ))
-                )
+                        r#"{"error": "Invalid request param: `public_key`"}"#,
+                    ),
+                ))
             }
         };
-        let public_key = PublicKey::from_hex(hex_wallet_key).map_err(|e| {
-            IronError::new(e, (
-                Status::BadRequest,
-                Header(ContentType::json()),
-                "\"Invalid request param: `pub_key`\"",
-            ))
-        })?;
+        let public_key = match PublicKey::from_hex(hex_wallet_key) {
+            Ok(key) => key,
+            Err(e) => {
+                return Err(IronError::new(
+                    e,
+                    (
+                        Status::BadRequest,
+                        Header(ContentType::json()),
+                        r#"{"error": "Invalid request param: `public_key`"}"#,
+                    ),
+                ))
+            }
+        };
 
         let wallet = {
             let snapshot = self.blockchain.snapshot();
@@ -78,19 +87,30 @@ impl Api for WalletsApi {
     }
 }
 
-/// Error codes for Wallets service
-#[derive(Debug, Fail)]
-#[repr(u8)]
+/// Error codes for Http server
+#[derive(Debug)]
 enum ApiError {
-    /// Insufficient currency amount.
-    ///
-    /// Can be emitted by `TxTransfer`.
-    #[fail(display = "Insufficient currency amount")]
-    InvalidParse = 0,
+    /// Invalid prarmeter either in path or in query
+    InvalidParam(&'static str, String),
 }
 
-impl iron::error::Error for ApiError {
+impl IronErrorTrait for ApiError {
     fn description(&self) -> &str {
-        (self as Fail).cause()
+        match self {
+            &ApiError::InvalidParam(_, _) => "Invalid param in path or query",
+        }
+    }
+}
+
+impl Display for ApiError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            &ApiError::InvalidParam(key, ref value) => f.write_str(&format!(
+                "{}: Path: {}, Query: {}",
+                self.description(),
+                key,
+                value
+            )),
+        }
     }
 }

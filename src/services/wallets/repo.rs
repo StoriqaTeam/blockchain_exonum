@@ -1,7 +1,7 @@
 //! Models and repo (data manipulation service) for Wallets service
 
-use exonum::storage::{ProofMapIndex, Snapshot, Fork};
-use exonum::crypto::{PublicKey};
+use exonum::storage::{Fork, ProofMapIndex, Snapshot};
+use exonum::crypto::PublicKey;
 
 // servicename.tablename
 const TABLE_NAME: &str = "wallets.wallets";
@@ -31,9 +31,9 @@ impl Wallet {
 }
 
 impl Default for Wallet {
-     fn default() -> Self {
-         Wallet::new(0)
-     }
+    fn default() -> Self {
+        Wallet::new(0)
+    }
 }
 
 /// Repo for manipulating wallets data.
@@ -56,7 +56,6 @@ impl<T: AsRef<Snapshot>> WalletsRepo<T> {
 
 /// Mutating methods for WalletRepo
 impl<'a> WalletsRepo<&'a mut Fork> {
-
     /// Get mutable methods for wallets
     pub fn as_mut(&mut self) -> ProofMapIndex<&mut Fork, PublicKey, Wallet> {
         ProofMapIndex::new(TABLE_NAME, &mut self.view)
