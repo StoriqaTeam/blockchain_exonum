@@ -9,6 +9,12 @@ pub enum Error {
     /// Can be emitted by `TxTransfer`.
     #[fail(display = "Insufficient currency amount")]
     InsufficientCurrencyAmount = 0,
+
+    /// Triggered when sender's account nonce isn't equal to transaction nonce.
+    ///
+    /// Can be emitted by `TxTransfer`.
+    #[fail(display = "Invalid nonce")]
+    InvalidNonce = 1,
 }
 
 impl From<Error> for ExecutionError {

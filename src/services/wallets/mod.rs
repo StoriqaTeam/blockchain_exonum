@@ -70,8 +70,8 @@ transactions! {
             to: &PublicKey,
             /// Number of tokens to transfer from sender's account to receiver's account.
             amount: u64,
-            /// Auxiliary number to guarantee non-idempotence of transactions.
-            seed: u64,
+            /// Number of transaction from sender's wallet. Must be equal to sender's account nonce.
+            nonce: u64,
         }
     }
 }
@@ -94,6 +94,9 @@ impl Transaction for TxTransfer {
             Some(val) => val,
             None => Err(Error::InsufficientCurrencyAmount)?,
         };
+        if sender_wallet.nonce() != self.nonce() {
+            return Err(Error::InvalidNonce.into())
+        }
         let receiver_wallet = repo_mut.get(self.to()).unwrap_or_default();
         let amount = self.amount();
         if sender_wallet.balance() >= amount {

@@ -9,8 +9,6 @@ use iron::status::Status;
 use iron::headers::ContentType;
 use iron::modifiers::Header;
 use std;
-use failure::Fail;
-use iron;
 use iron::error::Error as IronErrorTrait;
 use std::fmt::{Display, Formatter};
 use bodyparser;

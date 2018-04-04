@@ -1,0 +1,15 @@
+version: '3'
+services:
+  stq-blockchain-client:
+    image: stq-blockchain-client
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: stq-blockchain-client
+    working_dir: /app
+    command: ["sh", "-c", "cargo run"]
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
+    stdin_open: true

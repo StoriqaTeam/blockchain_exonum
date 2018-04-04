@@ -1,11 +1,11 @@
 version: '3'
 services:
   exonum-node-1:
-    image: exonum
+    image: stq-blockchain
     build:
       context: .
       dockerfile: Dockerfile.exonum
-    container_name: exonum
+    container_name: stq-blockchain
     working_dir: /app
     command: ["sh", "-c", "cargo run"]
     volumes:
@@ -14,7 +14,7 @@ services:
     ports:
       - 8000:8000
     stdin_open: true
-    
+
 
 volumes:
   exonum_cargo_cache:
