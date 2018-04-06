@@ -94,7 +94,7 @@ impl Api for WalletsApi {
 
         // Bind handlers to specific routes.
         router.post("/v1/wallets/transfer", post_transfer, "post_transfer");
-        router.get("/v1/wallet/:pub_key", get_wallet, "get_wallet");
+        router.get("/v1/wallets/:pub_key", get_wallet, "get_wallet");
     }
 }
 

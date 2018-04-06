@@ -8,15 +8,18 @@ use exonum::encoding;
 use exonum::messages::{Message, RawTransaction};
 use exonum::storage::{Fork, Snapshot};
 use exonum::blockchain::{ApiContext, ExecutionResult, Service, Transaction, TransactionSet};
-use exonum::crypto::Hash;
+use exonum::crypto::{gen_keypair, Hash};
+use exonum::encoding::serialize::ToHex;
 use exonum::api::Api;
 use iron::Handler;
 use router::Router;
 use exonum::crypto::PublicKey;
+use exonum::encoding::serialize::json::reexport::Value;
 
 use self::api::WalletsApi;
 use self::repo::WalletsRepo;
 use self::error::Error;
+use self::repo::Wallet;
 use super::{WALLETS_SERVICE_ID, WALLETS_SERVICE_NAME};
 
 pub struct WalletsService;
@@ -28,6 +31,20 @@ impl Service for WalletsService {
 
     fn service_id(&self) -> u16 {
         WALLETS_SERVICE_ID
+    }
+
+    fn initialize(&self, fork: &mut Fork) -> Value {
+        let (public_key, private_key) = gen_keypair();
+        let string_public_key = public_key.to_string();
+        let mut string_private_key = String::new();
+        private_key.write_hex(&mut string_private_key).unwrap();
+        println!(
+            "Keys with money - public: {}, private: {}",
+            string_public_key, string_private_key
+        );
+        let mut repo = WalletsRepo::new(fork);
+        repo.as_mut().put(&public_key, Wallet::new(0, 1000000000));
+        Value::Null
     }
 
     // Implement a method to deserialize transactions coming to the node.
@@ -95,7 +112,7 @@ impl Transaction for TxTransfer {
             None => Err(Error::InsufficientCurrencyAmount)?,
         };
         if sender_wallet.nonce() != self.nonce() {
-            return Err(Error::InvalidNonce.into())
+            return Err(Error::InvalidNonce.into());
         }
         let receiver_wallet = repo_mut.get(self.to()).unwrap_or_default();
         let amount = self.amount();

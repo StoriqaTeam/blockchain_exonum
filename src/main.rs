@@ -18,7 +18,6 @@ extern crate storiqa_crypto_lib;
 use exonum::blockchain::{GenesisConfig, ValidatorKeys};
 use exonum::node::{Node, NodeApiConfig, NodeConfig};
 use exonum::storage::MemoryDB;
-use exonum::encoding::serialize::ToHex;
 
 use storiqa_crypto_lib::WalletsService;
 
