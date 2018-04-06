@@ -15,6 +15,6 @@ let make = (_) => {
   ...component,
   render: _ =>
     <div>
-      <Balance message="123" />
+      <Balance />
     </div>,
 };

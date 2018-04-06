@@ -22,6 +22,8 @@
     "webpack-cli": "^2.0.13"
   },
   "dependencies": {
+    "@glennsl/bs-json": "^1.2.0",
+    "bs-fetch": "^0.2.1",
     "css-loader": "^0.28.11",
     "reason-react": "^0.3.4"
   }
