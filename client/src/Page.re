@@ -11,10 +11,10 @@ let handleClick = (_event, _self) => Js.log("clicked!");
    `<Page message="hello" />`
    Which desugars to
    `ReasonReact.element (Page.make message::"hello" [||])` */
-let make = (~message, _children) => {
+let make = (_) => {
   ...component,
-  render: self =>
-    <div onClick=(self.handle(handleClick))>
-      (ReasonReact.stringToElement(message))
+  render: _ =>
+    <div>
+      <Balance message="123" />
     </div>,
 };

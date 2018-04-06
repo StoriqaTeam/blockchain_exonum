@@ -34,7 +34,8 @@ impl Wallet {
 
 impl Default for Wallet {
     fn default() -> Self {
-        Wallet::new(0, 0)
+        // TODO: remove this hack
+        Wallet::new(0, 100000)
     }
 }
 
